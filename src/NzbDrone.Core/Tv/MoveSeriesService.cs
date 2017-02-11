@@ -48,8 +48,6 @@ namespace NzbDrone.Core.Tv
 
             _logger.ProgressInfo("{0} moved successfully to {1}", series.Title, series.Path);
 
-            // Refetch the series from the DB and update it's path to ensure other changes to the series are not lost
-
             _eventAggregator.PublishEvent(new SeriesMovedEvent(series, sourcePath, destinationPath));
         }
 

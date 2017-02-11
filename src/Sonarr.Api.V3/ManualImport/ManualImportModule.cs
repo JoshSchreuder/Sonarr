@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using NzbDrone.Core.MediaFiles.EpisodeImport.Manual;
 using NzbDrone.Core.Qualities;
 using Sonarr.Http;
+using Sonarr.Http.Extensions;
 
 namespace Sonarr.Api.V3.ManualImport
 {
@@ -22,8 +23,9 @@ namespace Sonarr.Api.V3.ManualImport
         {
             var folder = (string)Request.Query.folder;
             var downloadId = (string)Request.Query.downloadId;
+            var filterExistingFiles = Request.GetBooleanQueryParameter("filterExistingFiles", true);
 
-            return _manualImportService.GetMediaFiles(folder, downloadId).ToResource().Select(AddQualityWeight).ToList();
+            return _manualImportService.GetMediaFiles(folder, downloadId, filterExistingFiles).ToResource().Select(AddQualityWeight).ToList();
         }
 
         private ManualImportResource AddQualityWeight(ManualImportResource item)
