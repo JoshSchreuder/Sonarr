@@ -1,11 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NLog;
-using NzbDrone.Common.EnsureThat;
 using NzbDrone.Common.Extensions;
-using NzbDrone.Core.DataAugmentation.Scene;
 using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Core.Organizer;
 using NzbDrone.Core.Parser;
@@ -18,6 +16,7 @@ namespace NzbDrone.Core.Tv
         Series GetSeries(int seriesId);
         List<Series> GetSeries(IEnumerable<int> seriesIds);
         Series AddSeries(Series newSeries);
+        List<Series> AddSeries(List<Series> newSeries);
         Series FindByTvdbId(int tvdbId);
         Series FindByTvRageId(int tvRageId);
         Series FindByTitle(string title);
@@ -25,6 +24,7 @@ namespace NzbDrone.Core.Tv
         Series FindByTitleInexact(string title);
         void DeleteSeries(int seriesId, bool deleteFiles);
         List<Series> GetAllSeries();
+        List<Series> AllForTag(int tagId);
         Series UpdateSeries(Series series, bool updateEpisodesToMatchSeason = true);
         List<Series> UpdateSeries(List<Series> series);
         bool SeriesPathExists(string folder);
@@ -66,6 +66,14 @@ namespace NzbDrone.Core.Tv
         {
             _seriesRepository.Insert(newSeries);
             _eventAggregator.PublishEvent(new SeriesAddedEvent(GetSeries(newSeries.Id)));
+
+            return newSeries;
+        }
+
+        public List<Series> AddSeries(List<Series> newSeries)
+        {
+            _seriesRepository.InsertMany(newSeries);
+            _eventAggregator.PublishEvent(new SeriesImportedEvent(newSeries.Select(s => s.Id).ToList()));
 
             return newSeries;
         }
@@ -144,6 +152,12 @@ namespace NzbDrone.Core.Tv
             return _seriesRepository.All().ToList();
         }
 
+        public List<Series> AllForTag(int tagId)
+        {
+            return GetAllSeries().Where(s => s.Tags.Contains(tagId))
+                                 .ToList();
+        }
+
         // updateEpisodesToMatchSeason is an override for EpisodeMonitoredService to use so a change via Season pass doesn't get nuked by the seasons loop.
         // TODO: Remove when seasons are split from series (or we come up with a better way to address this)
         public Series UpdateSeries(Series series, bool updateEpisodesToMatchSeason = true)
@@ -174,8 +188,11 @@ namespace NzbDrone.Core.Tv
                 _logger.Trace("Updating: {0}", s.Title);
                 if (!s.RootFolderPath.IsNullOrWhiteSpace())
                 {
-                    var folderName = new DirectoryInfo(s.Path).Name;
-                    s.Path = Path.Combine(s.RootFolderPath, folderName);
+                    // Build the series folder name instead of using the existing folder name.
+                    // This may lead to folder name changes, but consistent with adding a new series.
+
+                    s.Path = Path.Combine(s.RootFolderPath, _fileNameBuilder.GetSeriesFolder(s));
+
                     _logger.Trace("Changing path for {0} to {1}", s.Title, s.Path);
                 }
 

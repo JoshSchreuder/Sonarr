@@ -165,6 +165,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                 var localEpisode = new LocalEpisode();
                 localEpisode.Path = file;
                 localEpisode.Quality = QualityParser.ParseQuality(file);
+                localEpisode.Language = LanguageParser.ParseLanguage(file);
                 localEpisode.Size = _diskProvider.GetFileSize(file);
 
                 return MapItem(new ImportDecision(localEpisode, new Rejection("Unknown Series")), folder, downloadId);
@@ -225,6 +226,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
             }
 
             item.Quality = decision.LocalEpisode.Quality;
+            item.Language = decision.LocalEpisode.Language;
             item.Size = _diskProvider.GetFileSize(decision.LocalEpisode.Path);
             item.Rejections = decision.Rejections;
 
@@ -257,6 +259,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                     ParsedEpisodeInfo = parsedEpisodeInfo,
                     Path = file.Path,
                     Quality = file.Quality,
+                    Language = file.Language,
                     Series = series,
                     Size = 0
                 };
